@@ -22,7 +22,7 @@ class Rule:
     external_rewiring: dict[tuple[Color, Color], Color]
 
 
-class ColoredGraph:
+class ColoredNetwork:
     def __init__(self, rules: list[Rule] = [], edges: list[Edge] = []):
         self.rules = rules
         self.edges = edges
@@ -54,7 +54,7 @@ class ColoredGraph:
         for i, rule in enumerate(self.rules):
             if rule.input == color_counts:
                 if verbose:
-                    print(f'Applying rule {i}')
+                    print(f'Applying rule {i} at node {node}')
                 # remove old edges
                 for edge in node_edges:
                     self.edges.remove(edge)
