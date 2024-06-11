@@ -3,8 +3,13 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
-type Node = int
 type Color = str
+
+
+@dataclass(eq=True, frozen=True)
+class Node:
+    id: int
+    label: str | None = None
 
 
 @dataclass
@@ -16,27 +21,29 @@ class Edge:
 
 @dataclass
 class Rule:
+    name: str | None
     input: dict[Color, int]
     new_edges: list[Edge]
     internal_rewiring: dict[Color, list[tuple[Node, Color]]]
     external_rewiring: dict[tuple[Color, Color], Color]
 
 
+# TODO: Maybe allow singleton nodes
 class ColoredNetwork:
     def __init__(self, rules: list[Rule] = [], edges: list[Edge] = []):
         self.rules = rules
         self.edges = edges
-        self.free_node_id = max([edge.v1 for edge in edges] + [edge.v2 for edge in edges], default=-1) + 1
+        self.free_node_id = max([edge.v1.id for edge in edges] + [edge.v2.id for edge in edges], default=-1) + 1
 
-    def new_node(self) -> Node:
+    def new_node(self, label: str | None = None) -> Node:
         self.free_node_id += 1
-        return self.free_node_id
+        return Node(self.free_node_id, label)
     
     def reduce(self, verbose=False):
-        if verbose:
-            self.draw()
         while self.reduce_all_nodes(verbose):
             pass
+        if verbose:
+            self.draw()
     
     def reduce_all_nodes(self, verbose=False) -> bool:
         reduced_any = False
@@ -46,7 +53,7 @@ class ColoredNetwork:
         return reduced_any
 
     def reduce_node(self, node: Node, verbose=True) -> bool:
-        node_edges = [edge for edge in self.edges if edge.v1 == node or edge.v2 == node]
+        node_edges = [edge for edge in self.edges if edge.v1.id == node.id or edge.v2.id == node.id]
         color_counts = {}
         for edge in node_edges:
             color_counts[edge.color] = color_counts.get(edge.color, 0) + 1
@@ -54,45 +61,49 @@ class ColoredNetwork:
         for i, rule in enumerate(self.rules):
             if rule.input == color_counts:
                 if verbose:
-                    print(f'Applying rule {i} at node {node}')
+                    self.draw(mark_red=node)
+                    print(f"Applying rule '{rule.name}' to node {node}")
                 # remove old edges
                 for edge in node_edges:
                     self.edges.remove(edge)
 
-                neighbors = [(edge.v2 if edge.v1 == node else edge.v1, edge.color) for edge in node_edges]
+                neighbors = [(edge.v2 if edge.v1.id == node.id else edge.v1, edge.color) for edge in node_edges]
 
                 # External rewiring
                 for n1, color1 in neighbors:
                     for n2, color2 in neighbors:
-                        if n1 != n2 and (color1, color2) in rule.external_rewiring:
+                        if n1.id != n2.id and (color1, color2) in rule.external_rewiring:
                             self.edges.append(Edge(n1, n2, rule.external_rewiring[(color1, color2)]))
 
-                # Create new node for each node to not have duplicate names
+                # Add new edges
                 node_name_mapping = {}
                 for edge in rule.new_edges:
-                    if edge.v1 not in node_name_mapping:
-                        node_name_mapping[edge.v1] = self.new_node()
-                    if edge.v2 not in node_name_mapping:
-                        node_name_mapping[edge.v2] = self.new_node()
-                    self.edges.append(Edge(node_name_mapping[edge.v1], node_name_mapping[edge.v2], edge.color))
+                    if edge.v1.id not in node_name_mapping:
+                        node_name_mapping[edge.v1.id] = self.new_node(label=edge.v1.label)
+                    if edge.v2.id not in node_name_mapping:
+                        node_name_mapping[edge.v2.id] = self.new_node(label=edge.v2.label)
+                    self.edges.append(Edge(node_name_mapping[edge.v1.id], node_name_mapping[edge.v2.id], edge.color))
 
                 # Internal rewiring
                 for edge in node_edges:
-                    neighbor = edge.v2 if edge.v1 == node else edge.v1
-                    for rewired_node in rule.internal_rewiring.get(edge.color, []):
-                        self.edges.append(Edge(neighbor, node_name_mapping[rewired_node], edge.color))
-
-                if verbose:
-                    self.draw()
+                    neighbor = edge.v2 if edge.v1.id == node.id else edge.v1
+                    for rewired_node, new_color in rule.internal_rewiring.get(edge.color, []):
+                        if rewired_node.id not in node_name_mapping:
+                            node_name_mapping[rewired_node.id] = self.new_node(label=rewired_node.label)
+                        self.edges.append(Edge(neighbor, node_name_mapping[rewired_node.id], new_color))
             
                 # Only apply one rule
                 return True
         return False
 
-    def draw(self):
+    def draw(self, mark_red: Node | None = None):
         G = nx.Graph()
+        vertex_lables = {}
         for edge in self.edges:
-            G.add_edge(edge.v1, edge.v2, color=edge.color)
+            G.add_edge(edge.v1.id, edge.v2.id, color=edge.color)
+            vertex_lables[edge.v1.id] = edge.v1.label
+            vertex_lables[edge.v2.id] = edge.v2.label
         edge_colors = [G[u][v]['color'] for u, v in G.edges()]
-        nx.draw(G, with_labels=True, edge_color=edge_colors)
+        node_colors = ['lightcoral' if mark_red is not None and node == mark_red.id else 'skyblue' for node in G.nodes()]
+        nx.draw(G, labels=vertex_lables, node_color=node_colors, edge_color=edge_colors)
         plt.show()
