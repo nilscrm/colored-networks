@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import networkx as nx
+from typing import Self
 
 
 type Color = str
@@ -38,13 +39,13 @@ class ColoredNetwork:
     def new_node(self, label: str | None = None) -> Node:
         self.free_node_id += 1
         return Node(self.free_node_id, label)
-    
+
     def reduce(self, verbose=False):
         while self.reduce_all_nodes(verbose):
             pass
         if verbose:
             self.draw()
-    
+
     def reduce_all_nodes(self, verbose=False) -> bool:
         reduced_any = False
         for node in set([edge.v1 for edge in self.edges] + [edge.v2 for edge in self.edges]):
@@ -58,7 +59,7 @@ class ColoredNetwork:
         for edge in node_edges:
             color_counts[edge.color] = color_counts.get(edge.color, 0) + 1
 
-        for i, rule in enumerate(self.rules):
+        for rule in self.rules:
             if rule.input == color_counts:
                 if verbose:
                     self.draw(mark_red=node)
@@ -91,7 +92,7 @@ class ColoredNetwork:
                         if rewired_node.id not in node_name_mapping:
                             node_name_mapping[rewired_node.id] = self.new_node(label=rewired_node.label)
                         self.edges.append(Edge(neighbor, node_name_mapping[rewired_node.id], new_color))
-            
+
                 # Only apply one rule
                 return True
         return False
@@ -103,7 +104,22 @@ class ColoredNetwork:
             G.add_edge(edge.v1.id, edge.v2.id, color=edge.color)
             vertex_lables[edge.v1.id] = edge.v1.label
             vertex_lables[edge.v2.id] = edge.v2.label
-        edge_colors = [G[u][v]['color'] for u, v in G.edges()]
-        node_colors = ['lightcoral' if mark_red is not None and node == mark_red.id else 'skyblue' for node in G.nodes()]
+        edge_colors = [G[u][v]["color"] for u, v in G.edges()]
+        node_colors = [
+            "lightcoral" if mark_red is not None and node == mark_red.id else "skyblue" for node in G.nodes()
+        ]
         nx.draw(G, labels=vertex_lables, node_color=node_colors, edge_color=edge_colors)
         plt.show()
+
+    def seems_isomorphic_to(self, other: Self) -> bool:
+        nodes1 = set([edge.v1.id for edge in self.edges] + [edge.v2.id for edge in self.edges])
+        nodes2 = set([edge.v1.id for edge in other.edges] + [edge.v2.id for edge in other.edges])
+
+        colors1 = sorted(
+            [sorted(edge.color for edge in self.edges if edge.v1.id == node or edge.v2.id == node) for node in nodes1]
+        )
+        colors2 = sorted(
+            [sorted(edge.color for edge in other.edges if edge.v1.id == node or edge.v2.id == node) for node in nodes2]
+        )
+
+        return colors1 == colors2
