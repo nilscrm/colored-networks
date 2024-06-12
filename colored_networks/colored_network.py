@@ -24,7 +24,6 @@ class Edge:
 class SplitRule:
     name: str | None
     input: dict[Color, int]
-    connection: Color | None
     node1_connection: dict[Color, Color]
     node2_connection: dict[Color, Color]
     rewiring: dict[tuple[Color, Color], Color]
@@ -82,8 +81,6 @@ class ColoredNetwork:
                     node2 = self.new_node(label=node.label)
                     self.nodes.append(node1)
                     self.nodes.append(node2)
-                    if rule.connection is not None:
-                        self.edges.append(Edge(node1, node2, rule.connection))
                     for neighbor, color in neighbors:
                         if color in rule.node1_connection:
                             self.edges.append(Edge(node1, neighbor, rule.node1_connection[color]))
