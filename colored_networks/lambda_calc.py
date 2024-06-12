@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Self
 
 from colored_networks.beta_reduction_rules import beta_reduction_rules
-from colored_networks.network import ColoredNetwork, Edge, Node
+from colored_networks.colored_network import ColoredNetwork, Edge, Node
 
 
 class LambdaTerm(ABC):
@@ -27,7 +27,9 @@ class LambdaTerm(ABC):
     ) -> tuple[Node, list[Edge], int]: ...
 
     def to_colored_network(self) -> ColoredNetwork:
-        return ColoredNetwork(rules=beta_reduction_rules, edges=self.to_colored_network_edges(0, {})[1])
+        edges = self.to_colored_network_edges(0, {})[1]
+        nodes = list({edge.v1 for edge in edges} | {edge.v2 for edge in edges})
+        return ColoredNetwork(nodes, edges, beta_reduction_rules)
 
     @abstractmethod
     def clone(self) -> Self: ...
