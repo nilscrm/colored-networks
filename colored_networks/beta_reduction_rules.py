@@ -19,6 +19,7 @@ yellow/olive: Variable duplicator node binds
 purple: lambda in beta redex got removed, now application node should be removed
 pink: input for duplication node (=> copy to yellow variable)
 fuchsia: indicator that duplicator should duplicate
+orchid: A dup node connected to this is just a temprary node between a dup node and its input, it should be removed.
 magenta: duplicated node
 orange: Node duplication
 gold/goldenrod: duplication of dup node
@@ -41,7 +42,6 @@ beta_reduction_rules = (
             node1_connection={"purple": "purple", "orangered": "orangered", "blue": "cornflowerblue"}
             | {p: p for p in parent},
             node2_connection={},
-            rewiring={},
         )
         for parent in [[], ["black"], ["red"], ["navy"]]
     ]
@@ -59,7 +59,6 @@ beta_reduction_rules = (
             node1_connection={"purple": "fuchsia"},
             node2_connection={"purple": "purple", "orangered": "tomato", "slateblue": "slateblue"}
             | {p: p for p in parent},
-            rewiring={},
         )
         for parent in [[], ["black"], ["red"], ["navy"]]
     ]
@@ -81,39 +80,39 @@ beta_reduction_rules = (
         SplitRule(
             name="detect duplication",
             input={"pink": 1, "yellow": 1, "green": 1, "fuchsia": 1},
-            node1_connection={"pink": "orange", "yellow": "yellow", "green": "green"},
+            node1_connection={"pink": "orange", "yellow": "yellow", "green": "green", "fuchsia": "fuchsia"},
             node2_connection={},
-            rewiring={},
         ),
         SplitRule(
             name="lambda duplication",
             input={"black": 1, "green": 1, "orange": 1},
             node1_connection={"black": "black", "green": "gold", "orange": "pink"},
             node2_connection={"black": "dimgray", "green": "goldenrod", "orange": "magenta"},
-            rewiring={},
         ),
         SplitRule(
             name="var duplication (as lambda body)",
             input={"black": 1, "dimgray": 1, "yellow": 1},
             node1_connection={"black": "black", "yellow": "yellow"},
             node2_connection={"dimgray": "black", "yellow": "olive"},
-            rewiring={},
         ),
         SplitRule(
             name="dup node duplication",
             input={"gold": 1, "goldenrod": 1, "yellow": 1, "olive": 1},
             node1_connection={"gold": "green", "yellow": "yellow"},
             node2_connection={"goldenrod": "green", "olive": "yellow"},
-            rewiring={},
         ),
         SplitRule(
-            name="Propagation of duplicated nodes at dup node",
-            input={"green": 1, "yellow": 1, "pink": 1, "magenta": 1},
-            node1_connection={"green": "fuchsia"},
-            node2_connection={},
+            name="Propagation of duplicated nodes at dup node, step 1",
+            input={"green": 1, "yellow": 1, "pink": 1, "magenta": 1, "fuchsia": 1},
+            node1_connection={"pink": "pink", "yellow": "yellow", "fuchsia": "fuchsia"},
+            node2_connection={"green": "green", "magenta": "magenta", "fuchsia": "orchid"},
+        ),
+        DeleteRule(
+            name="Propagation of duplicated nodes at dup node, step 2",
+            input={"orchid": 1, "green": 1, "magenta": 1},
             rewiring={
-                ("pink", "yellow"): "lime",
                 ("green", "magenta"): "pink",
+                ("green", "orchid"): "fuchsia",
             },
         ),
     ]
@@ -132,7 +131,6 @@ beta_reduction_rules = (
             input={"pink": 1, "fuchsia": 1},
             node1_connection={"pink": "maroon"},
             node2_connection={},
-            rewiring={},
         ),
         DeleteRule(
             name="delete lambda",
@@ -155,7 +153,6 @@ beta_reduction_rules = (
             input={"maroon": 1, "yellow": 1},
             node1_connection={"yellow": "darkred"},
             node2_connection={},
-            rewiring={},
         ),
         DeleteRule(
             name="delete dup node",

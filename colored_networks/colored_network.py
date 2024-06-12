@@ -26,7 +26,6 @@ class SplitRule:
     input: dict[Color, int]
     node1_connection: dict[Color, Color]
     node2_connection: dict[Color, Color]
-    rewiring: dict[tuple[Color, Color], Color]
 
 
 @dataclass
@@ -75,26 +74,27 @@ class ColoredNetwork:
 
                 neighbors = [(edge.v2 if edge.v1.id == node.id else edge.v1, edge.color) for edge in node_edges]
 
-                if isinstance(rule, SplitRule):
-                    # Add two new nodes with their connections
-                    node1 = self.new_node(label=node.label)
-                    node2 = self.new_node(label=node.label)
-                    self.nodes.append(node1)
-                    self.nodes.append(node2)
-                    for neighbor, color in neighbors:
-                        if color in rule.node1_connection:
-                            self.edges.append(Edge(node1, neighbor, rule.node1_connection[color]))
-                        if color in rule.node2_connection:
-                            self.edges.append(Edge(node2, neighbor, rule.node2_connection[color]))
-
-                # Rewiring
-                for n1, color1 in neighbors:
-                    for n2, color2 in neighbors:
-                        if n1.id != n2.id and (color1, color2) in rule.rewiring:
-                            # This if is to prevent two edges appearning for rules that connect the same colors
-                            if color1 == color2 and n1.id < n2.id:
-                                continue
-                            self.edges.append(Edge(n1, n2, rule.rewiring[(color1, color2)]))
+                match rule:
+                    case SplitRule():
+                        # Add two new nodes with their connections
+                        node1 = self.new_node(label=node.label)
+                        node2 = self.new_node(label=node.label)
+                        self.nodes.append(node1)
+                        self.nodes.append(node2)
+                        for neighbor, color in neighbors:
+                            if color in rule.node1_connection:
+                                self.edges.append(Edge(node1, neighbor, rule.node1_connection[color]))
+                            if color in rule.node2_connection:
+                                self.edges.append(Edge(node2, neighbor, rule.node2_connection[color]))
+                    case DeleteRule():
+                        # Rewiring
+                        for n1, color1 in neighbors:
+                            for n2, color2 in neighbors:
+                                if n1.id != n2.id and (color1, color2) in rule.rewiring:
+                                    # This if is to prevent two edges appearning for rules that connect the same colors
+                                    if color1 == color2 and n1.id < n2.id:
+                                        continue
+                                    self.edges.append(Edge(n1, n2, rule.rewiring[(color1, color2)]))
 
                 return True
         return False
