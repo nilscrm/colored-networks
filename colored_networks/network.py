@@ -10,7 +10,7 @@ type Color = str
 @dataclass(eq=True, frozen=True)
 class Node:
     id: int
-    label: str | None = None
+    label: str = ""
 
 
 @dataclass
@@ -36,7 +36,7 @@ class ColoredNetwork:
         self.edges = edges
         self.free_node_id = max([edge.v1.id for edge in edges] + [edge.v2.id for edge in edges], default=-1) + 1
 
-    def new_node(self, label: str | None = None) -> Node:
+    def new_node(self, label: str = "") -> Node:
         self.free_node_id += 1
         return Node(self.free_node_id, label)
 
@@ -74,6 +74,9 @@ class ColoredNetwork:
                 for n1, color1 in neighbors:
                     for n2, color2 in neighbors:
                         if n1.id != n2.id and (color1, color2) in rule.external_rewiring:
+                            # This if is to prevent two edges appearning for rules that connect the same colors
+                            if color1 == color2 and n1.id < n2.id:
+                                continue
                             self.edges.append(Edge(n1, n2, rule.external_rewiring[(color1, color2)]))
 
                 # Add new edges
