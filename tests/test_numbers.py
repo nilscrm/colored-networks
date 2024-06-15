@@ -1,23 +1,64 @@
-from colored_networks.lambda_calc import App
-from colored_networks.lambda_constants import add, mul, zero, one, num
+from colored_networks.lambda_constants import zero, one, num, succ, add, mul, dec
 
 
 def test_mul_1_1():
-    mul_1_1 = App(App(mul, one), one)
+    mul_1_1 = mul(one, one)
     net = mul_1_1.to_colored_network()
     net.reduce()
     assert net.seems_isomorphic_to(one.to_colored_network())
 
 
 def test_add_0_1():
-    add_1_2 = App(App(add.clone(), zero), one)
+    add_1_2 = add(zero, one)
     net = add_1_2.to_colored_network()
     net.reduce()
     assert net.seems_isomorphic_to(one.to_colored_network())
 
 
 def mul_5_7():
-    mul_5_7 = App(App(mul, num(5)), num(7))
+    mul_5_7 = mul(num(5), num(7))
     net = mul_5_7.to_colored_network()
     net.reduce()
     assert net.seems_isomorphic_to(num(35).to_colored_network())
+
+
+def test_succ_0():
+    succ_0 = succ(zero)
+    net = succ_0.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(one.to_colored_network())
+
+
+def test_succ_num_2():
+    succ_num_0 = succ(num(2))
+    net = succ_num_0.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(num(3).to_colored_network())
+
+
+def test_succ_13():
+    succ_13 = succ(num(13))
+    net = succ_13.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(num(14).to_colored_network())
+
+
+def test_dec_1():
+    dec_1 = dec(one)
+    net = dec_1.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(zero.to_colored_network())
+
+
+def test_dec_0():
+    dec_0 = dec(zero)
+    net = dec_0.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(zero.to_colored_network())
+
+
+def test_dec_42():
+    dec_42 = dec(num(42))
+    net = dec_42.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(num(41).to_colored_network())

@@ -23,7 +23,7 @@ class LambdaTerm(ABC):
 
     @abstractmethod
     def to_colored_network_edges(
-        self, next_vertex_id, var_dup_nodes: dict[str, (Node, bool)]
+        self, next_vertex_id, var_dup_nodes: dict[str, Node]
     ) -> tuple[Node, list[Edge], int]: ...
 
     def to_colored_network(self) -> ColoredNetwork:
@@ -46,16 +46,11 @@ class Abs(LambdaTerm):
         self.body = self.body.substitute(var, replacement)
         return self
 
-    def to_colored_network_edges(
-        self, next_vertex_id, var_dup_nodes: dict[str, (Node, bool)]
-    ) -> tuple[Node, list[Edge], int]:
+    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         abs_node = Node(next_vertex_id, label=f"λ{self.var}")
-        # We always attach at least 1 duplicater node to the lambda abstraction to indicate to the node that it is a
-        # lambda abstraction
-        dup_node = Node(next_vertex_id + 1, label="Δ")
-        var_dup_nodes[self.var] = (dup_node, False)
-        body_node, body_edges, next_vertex_id = self.body.to_colored_network_edges(next_vertex_id + 2, var_dup_nodes)
-        edges = [Edge(abs_node, body_node, "black"), Edge(abs_node, dup_node, "green")] + body_edges
+        var_dup_nodes[self.var] = abs_node
+        body_node, body_edges, next_vertex_id = self.body.to_colored_network_edges(next_vertex_id + 1, var_dup_nodes)
+        edges = [Edge(abs_node, body_node, "black")] + body_edges
         return abs_node, edges, next_vertex_id
 
     def clone(self) -> Self:
@@ -72,9 +67,7 @@ class App(LambdaTerm):
         self.arg = self.arg.substitute(var, replacement)
         return self
 
-    def to_colored_network_edges(
-        self, next_vertex_id, var_dup_nodes: dict[str, (Node, bool)]
-    ) -> tuple[Node, list[Edge], int]:
+    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         func_root, func_edges, next_vertex_id = self.func.to_colored_network_edges(next_vertex_id, var_dup_nodes)
         arg_root, arg_edges, next_vertex_id = self.arg.to_colored_network_edges(next_vertex_id, var_dup_nodes)
         app_node = Node(next_vertex_id, label="⋅")
@@ -101,20 +94,18 @@ class Var(LambdaTerm):
     def substitute(self, var, replacement):
         return replacement if self.name == var else self
 
-    def to_colored_network_edges(
-        self, next_vertex_id, var_dup_nodes: dict[str, (Node, bool)]
-    ) -> tuple[Node, list[Edge], int]:
+    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         var_node = Node(next_vertex_id, label=self.name)
-        dup_node, used = var_dup_nodes[self.name]
-        if used:
-            new_dup_node = Node(next_vertex_id + 1, label="Δ")
-            edges = [Edge(dup_node, new_dup_node, "green"), Edge(new_dup_node, var_node, "yellow")]
-            var_dup_nodes[self.name] = (dup_node, True)
-            return var_node, edges, next_vertex_id + 2
-        else:
-            edges = [Edge(dup_node, var_node, "yellow")]
-            var_dup_nodes[self.name] = (dup_node, True)
-            return var_node, edges, next_vertex_id + 1
+        parent_dup_node = var_dup_nodes[self.name]
+        dup_connecter_node = Node(next_vertex_id + 1)
+        new_dup_node = Node(next_vertex_id + 2, label="Δ")
+        edges = [
+            Edge(parent_dup_node, dup_connecter_node, "green"),
+            Edge(dup_connecter_node, new_dup_node, "forestgreen"),
+            Edge(new_dup_node, var_node, "yellow"),
+        ]
+        var_dup_nodes[self.name] = new_dup_node
+        return var_node, edges, next_vertex_id + 3
 
     def clone(self) -> Self:
         return Var(self.name)
