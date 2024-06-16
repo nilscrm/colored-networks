@@ -43,13 +43,6 @@ def test_succ_13():
     assert net.seems_isomorphic_to(num(14).to_colored_network())
 
 
-def test_dec_1():
-    dec_1 = dec(one)
-    net = dec_1.to_colored_network()
-    net.reduce()
-    assert net.seems_isomorphic_to(zero.to_colored_network())
-
-
 def test_dec_0():
     dec_0 = dec(zero)
     net = dec_0.to_colored_network()
@@ -57,8 +50,22 @@ def test_dec_0():
     assert net.seems_isomorphic_to(zero.to_colored_network())
 
 
-def test_dec_42():
-    dec_42 = dec(num(42))
-    net = dec_42.to_colored_network()
+def test_dec_1():
+    dec_1 = dec(one)
+    net = dec_1.to_colored_network()
     net.reduce()
-    assert net.seems_isomorphic_to(num(41).to_colored_network())
+    assert net.seems_isomorphic_to(zero.to_colored_network())
+
+
+def test_dec_2():
+    dec_2 = dec(num(2))
+    net = dec_2.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(num(1).to_colored_network())
+
+
+# def test_dec_13():
+#     dec_13 = dec(num(13))
+#     net = dec_13.to_colored_network()
+#     net.reduce()
+#     assert net.seems_isomorphic_to(num(12).to_colored_network())

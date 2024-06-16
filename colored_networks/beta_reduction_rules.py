@@ -6,18 +6,19 @@ Meaning of the colors
 black: body of a lambda abstraction
 lightgray/darkgray: connects duplicated lambda terms to their not yet duplicated child
 red: function of an application
-lighsalmon/salmon: connects duplicated app nodes to their not yet duplicated left child
+lightsalmon/salmon: connects duplicated app nodes to their not yet duplicated left child
 coral: connects application node to lambda function after lambda function has produced indicator node for app node
 orangered: left child of application after lambda node was removed from it
 tomato: connect app node and dup node that has just been maked with fuchsia.
     Next the app node should remove itself to let the dup node copy the argument.
 
 blue: argument of an application
-lighblue/darkblue: connects duplicated app nodes to their not yet duplicated right child
+lightblue/darkblue: connects duplicated app nodes to their not yet duplicated right child
 navy: parent node (this node is argument of an application)
 mediumblue/midnightblue: connects duplicated connecter nodes to their not yet duplicated child
 cornflowerblue: prepare right child for substitution
 slateblue: right child about to be substituted
+aqua: connects a app node being beta reduced to its parant app. This way we prevent the parent node from being reduced.
 
 green/forestgreen: Chain of dup nodes from lambda abstraction, they always have a connector node between then,
     the parent connected with forestgreen and the child connected with green
@@ -27,7 +28,7 @@ lighgreen/darkgreen: Connect duplicated lambda nodes to their not yet duplicated
 
 yellow: Variable duplicator node binds
 goldenrod/darkgoldenrod: Connectes duplicated dup nodes from duplicated chain to not yet duplicated variable node
-lightyellow/khaki: Connect duplicated variable to their not yet duplicated dup node
+khaki/darkkhaki: Connect duplicated variable to their not yet duplicated dup node
 gold: When duplicating a dup node this edge gets created for one of the variable nodes to connect up the cloned dup
     nodes
 
@@ -64,6 +65,21 @@ beta_reduction_rules = (
             input={"coral": 1, "black": 1, "green": 1},
             rewiring={("coral", "green"): "purple", ("black", "coral"): "orangered"},
         ),
+        # In case an app node gets reduces we need to prevent the parent node from beta reducing.
+        # Otherwise this acc node will end up with two slateblue connection which it can't tell apart.
+        # To prevent this we turn the parent connection into aqua.
+        SplitRule(
+            name="beta reduction (app) step 1 (aqua)",
+            input={"tan": 1, "purple": 1, "blue": 1, "orangered": 1, "navy": 1},
+            node1_connection={
+                "tan": "tan",
+                "purple": "purple",
+                "orangered": "orangered",
+                "blue": "cornflowerblue",
+                "navy": "aqua",
+            },
+            node2_connection={},
+        ),
     ]
     + [
         SplitRule(
@@ -73,7 +89,16 @@ beta_reduction_rules = (
             | {p: p for p in parent},
             node2_connection={},
         )
-        for parent in [[], ["black"], ["red"], ["navy"]]
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["maroon"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
     ]
     + [
         DeleteRule(
@@ -90,7 +115,25 @@ beta_reduction_rules = (
             node2_connection={"tan": "tan", "purple": "purple", "orangered": "tomato", "slateblue": "slateblue"}
             | {p: p for p in parent},
         )
-        for parent in [[], ["black"], ["red"], ["navy"]]
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["aqua"],
+            ["maroon"],
+            ["slateblue"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
+    ]
+    + [
+        DeleteRule(
+            name="beta reduction (app) step 3",
+            input={"tan": 1, "purple": 1, "slateblue": 1, "tomato": 1, "aqua": 1},
+            rewiring={("purple", "slateblue"): "pink", ("tomato", "aqua"): "navy"},
+        )
     ]
     + [
         DeleteRule(
@@ -98,19 +141,30 @@ beta_reduction_rules = (
             input={"tan": 1, "purple": 1, "slateblue": 1, "tomato": 1} | {p: 1 for p in parent},
             rewiring={("purple", "slateblue"): "pink"} | {("tomato", p): p for p in parent},
         )
-        for parent in [[], ["black"], ["red"], ["navy"]]
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["navy"],
+            ["maroon"],
+            ["slateblue"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
     ]
     + [
         # Variable substitution
         DeleteRule(
-            name="dup node connecter, substitution propagation propagation",
+            name="dup node connecter, substitution propagation",
             input={"pink": 1, "fuchsia": 1, "forestgreen": 1},
             rewiring={("forestgreen", "fuchsia"): "fuchsia", ("pink", "forestgreen"): "pink"},
         ),
         DeleteRule(
             name="var substitution (dup)",
             input={"pink": 1, "fuchsia": 1, "yellow": 1},
-            rewiring={("pink", "yellow"): "lime"},
+            rewiring={("pink", "yellow"): "lime", ("fuchsia", "yellow"): "fuchsia"},
         ),
         # If variable was bound to multiple variables we need to clone the argument to substitute the term into
         # multiple variables.
@@ -120,6 +174,8 @@ beta_reduction_rules = (
             rewiring={
                 # Mark next dup node ready for duplication
                 ("fuchsia", "green"): "fuchsia",
+                # Mark variable ready for substitution
+                ("yellow", "fuchsia"): "fuchsia",
                 # Connect term to variable to be substitued for. Use orange instead of lime to wait for node to be
                 # duplicated.
                 ("pink", "yellow"): "orange",
@@ -154,14 +210,14 @@ beta_reduction_rules = (
         SplitRule(
             name="app root duplication",
             input={"red": 1, "blue": 1, "orange": 1, "magenta": 1},
-            node1_connection={"red": "lighsalmon", "blue": "lighblue", "orange": "lime"},
+            node1_connection={"red": "lightsalmon", "blue": "lightblue", "orange": "lime"},
             node2_connection={"red": "salmon", "blue": "darkblue", "magenta": "pink"},
         ),
         SplitRule(
             name="var root duplication",
             input={"yellow": 1, "orange": 1, "magenta": 1},
-            node1_connection={"yellow": "lightyellow", "orange": "lime"},
-            node2_connection={"yellow": "khaki", "magenta": "pink"},
+            node1_connection={"yellow": "khaki", "orange": "lime"},
+            node2_connection={"yellow": "darkkhaki", "magenta": "pink"},
         ),
     ]
     # The following duplication happens because the node realizes it has two parents.
@@ -174,7 +230,7 @@ beta_reduction_rules = (
         )
         for (parents, regular_color) in [
             (["lightgray", "darkgray"], "black"),
-            (["lighsalmon", "salmon"], "red"),
+            (["lightsalmon", "salmon"], "red"),
             (["mediumblue", "midnightblue"], "navy"),
         ]
     ]
@@ -185,12 +241,21 @@ beta_reduction_rules = (
         SplitRule(
             name="lambda duplication, step 1",
             input={"black": 1, "green": 1} | {p: 1 for p in parents},
-            node1_connection={"black": "lightgray", "green": "lightgreen"} | {parents[0]: regular_color},
-            node2_connection={"black": "darkgray", "green": "darkgreen"} | {parents[1]: regular_color},
+            node1_connection={"black": "black", "green": "seagreen"} | {p: p for p in parents},
+            node2_connection={},
+        )
+        for parents in [("lightgray", "darkgray"), ("lightsalmon", "salmon"), ("mediumblue", "midnightblue")]
+    ]
+    + [
+        SplitRule(
+            name="lambda duplication, step 2",
+            input={"black": 1, "springgreen": 1, "mediumspringgreen": 1} | {p: 1 for p in parents},
+            node1_connection={"black": "lightgray", "springgreen": "green"} | {parents[0]: regular_color},
+            node2_connection={"black": "darkgray", "mediumspringgreen": "green"} | {parents[1]: regular_color},
         )
         for (parents, regular_color) in [
             (["lightgray", "darkgray"], "black"),
-            (["lighsalmon", "salmon"], "red"),
+            (["lightsalmon", "salmon"], "red"),
             (["mediumblue", "midnightblue"], "navy"),
         ]
     ]
@@ -198,12 +263,12 @@ beta_reduction_rules = (
         SplitRule(
             name="app duplication",
             input={"red": 1, "blue": 1} | {p: 1 for p in parents},
-            node1_connection={"red": "lighsalmon", "blue": "lighblue"} | {parents[0]: regular_color},
+            node1_connection={"red": "lightsalmon", "blue": "lightblue"} | {parents[0]: regular_color},
             node2_connection={"red": "salmon", "blue": "darkblue"} | {parents[1]: regular_color},
         )
         for (parents, regular_color) in [
             (["lightgray", "darkgray"], "black"),
-            (["lighsalmon", "salmon"], "red"),
+            (["lightsalmon", "salmon"], "red"),
             (["mediumblue", "midnightblue"], "navy"),
         ]
     ]
@@ -219,12 +284,12 @@ beta_reduction_rules = (
         SplitRule(
             name="var duplication (lambda term didn't get cloned)",
             input={"yellow": 1} | {p: 1 for p in parents},
-            node1_connection={"yellow": "lightyellow"} | {parents[0]: regular_color},
-            node2_connection={"yellow": "khaki"} | {parents[1]: regular_color},
+            node1_connection={"yellow": "khaki"} | {parents[0]: regular_color},
+            node2_connection={"yellow": "darkkhaki"} | {parents[1]: regular_color},
         )
         for (parents, regular_color) in [
             (["lightgray", "darkgray"], "black"),
-            (["lighsalmon", "salmon"], "red"),
+            (["lightsalmon", "salmon"], "red"),
             (["mediumblue", "midnightblue"], "navy"),
         ]
     ]
@@ -237,7 +302,7 @@ beta_reduction_rules = (
         )
         for (parents, regular_color) in [
             (["lightgray", "darkgray"], "black"),
-            (["lighsalmon", "salmon"], "red"),
+            (["lightsalmon", "salmon"], "red"),
             (["mediumblue", "midnightblue"], "navy"),
         ]
     ]
@@ -282,35 +347,47 @@ beta_reduction_rules = (
         # If the chain didn't get duplicated but the variable did, we need to create a new node in the chain.
         SplitRule(
             name="dup node duplication (one neighbor), step 1",
-            input={"forestgreen": 1, "lighyellow": 1, "khaki": 1},
-            node1_connection={"forestgreen": "forestgreen", "lighyellow": "lightyellow"},
-            node2_connection={"khaki": "yellow", "lighyellow": "gold"},
+            input={"forestgreen": 1, "khaki": 1, "darkkhaki": 1},
+            node1_connection={"forestgreen": "forestgreen", "khaki": "khaki"},
+            node2_connection={"darkkhaki": "yellow", "khaki": "gold"},
         ),
         SplitRule(
             name="dup node duplication (two neighbors), step 1",
-            input={"forestgreen": 1, "green": 1, "lighyellow": 1, "khaki": 1},
-            node1_connection={"forestgreen": "forestgreen", "lighyellow": "lightyellow"},
-            node2_connection={"green": "green", "khaki": "yellow", "lighyellow": "gold"},
+            input={"forestgreen": 1, "green": 1, "khaki": 1, "darkkhaki": 1},
+            node1_connection={"forestgreen": "forestgreen", "khaki": "khaki"},
+            node2_connection={"green": "green", "darkkhaki": "yellow", "khaki": "gold"},
         ),
     ]
     + [
         # Insert new dup connector node between the two duplicated dup nodes
         SplitRule(
             name="dup node duplication, step 2",
-            input={"lightyellow": 1, "gold": 1} | {p: 1 for p in parent},
-            node1_connection={"lightyellow": "yellow"} | {p: p for p in parent},
-            node2_connection={"lightyellow": "olive", "green": "forestgreen"},
+            input={"khaki": 1, "gold": 1} | {p: 1 for p in parent},
+            node1_connection={"khaki": "yellow"} | {p: p for p in parent},
+            node2_connection={"khaki": "olive", "green": "forestgreen"},
         )
         for parent in [[], ["black"], ["red"], ["navy"]]
     ]
     + [
         DeleteRule(
             name="var substitution",
-            input={"lime": 1} | {p: 1 for p in parent},
+            input={"lime": 1, "fuchsia": 1} | {p: 1 for p in parent},
             rewiring={(p, "lime"): p for p in parent},
         )
-        # marron if the variable should be deleted, then this gets propagated to the substitution term
-        for parent in [[], ["black"], ["red"], ["navy"], ["marron"]]
+        # maroon if the variable should be deleted, then this gets propagated to the substitution term
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["navy"],
+            ["slateblue"],
+            ["pink"],
+            ["maroon"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
     ]
     # Deletion
     + [
@@ -325,7 +402,18 @@ beta_reduction_rules = (
             node1_connection={"orangered": "orangered", "tan": "tan"} | {p: p for p in parent},
             node2_connection={"blue": "maroon"},
         )
-        for parent in [[], ["black"], ["red"], ["navy"]]
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["navy"],
+            ["maroon"],
+            ["slateblue"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
     ]
     + [
         DeleteRule(
@@ -333,7 +421,18 @@ beta_reduction_rules = (
             input={"orangered": 1, "tan": 1} | {p: 1 for p in parent},
             rewiring={("orangered", p): p for p in parent},
         )
-        for parent in [[], ["black"], ["red"], ["navy"]]
+        for parent in [
+            [],
+            ["black"],
+            ["red"],
+            ["navy"],
+            ["maroon"],
+            ["slateblue"],
+            ["orange", "magenta"],
+            ["lightgray", "darkgray"],
+            ["lightsalmon", "salmon"],
+            ["mediumblue", "midnightblue"],
+        ]
     ]
     + [
         DeleteRule(
@@ -363,37 +462,49 @@ beta_reduction_rules = (
             name="delete variable",
             input={"maroon": 1, "yellow": 1},
             node1_connection={"yellow": "darkred"},
-            node2_connection={},
+            node2_connection={"yellow": "darkred"},
+        ),
+        SplitRule(
+            name="delete dup node (one neighbor), step 1",
+            input={"darkred": 2, "forestgreen": 1},
+            node1_connection={"forestgreen": "forestgreen", "darkred": "firebrick"},
+            node2_connection={"darkred": "crimson"},
         ),
         DeleteRule(
-            name="delete dup node",
-            input={"darkred": 1},
-            rewiring={},
+            name="delete dup node (one neighbor), step 2",
+            input={"firebrick": 2, "forestgreen": 1},
+            rewiring={("forestgreen", "firebrick"): "firebrick"},
+        ),
+        SplitRule(
+            name="delete dup node (two neighbor), step 1",
+            input={"darkred": 2, "forestgreen": 1, "green": 1},
+            node1_connection={"forestgreen": "forestgreen", "green": "green", "darkred": "firebrick"},
+            node2_connection={"darkred": "crimson"},
         ),
         DeleteRule(
-            name="delete dup node (one neighbor)",
-            input={"darkred": 1, "forestgreen": 1},
-            rewiring={("darkred", "forestgreen"): "firebrick"},
-        ),
-        DeleteRule(
-            name="delete dup node (sandwiched)",
-            input={"darkred": 1, "green": 1, "forestgreen": 1},
-            rewiring={("darkred", "forestgreen"): "firebrick", ("forestgreen", "green"): "forestgreen"},
+            name="delete dup node (two neighbor), step 2",
+            input={"firebrick": 2, "forestgreen": 1, "green": 1},
+            rewiring={("forestgreen", "firebrick"): "firebrick", ("green", "forestgreen"): "green"},
         ),
         DeleteRule(
             name="delete dup connector node (no neighbor)",
-            input={"firebrick": 1},
+            input={"firebrick": 2},
             rewiring={},
         ),
         DeleteRule(
             name="delete dup connector node (one neighbor)",
-            input={"firebrick": 1, "green": 1},
+            input={"firebrick": 2, "green": 1},
             rewiring={},
         ),
         DeleteRule(
             name="delete dup connector node (two neighbors)",
-            input={"firebrick": 1, "green": 1, "forestgreen": 1},
-            rewiring={("forestgreen", "green"): "green"},
+            input={"firebrick": 2, "green": 2},
+            rewiring={("green", "green"): "green"},
+        ),
+        DeleteRule(
+            name="delete dup node deleter",
+            input={"crimson": 1},
+            rewiring={},
         ),
         DeleteRule(
             name="Delete singleton node",

@@ -46,11 +46,12 @@ class ColoredNetwork:
         self.free_node_id += 1
         return Node(self.free_node_id, label)
 
-    def reduce(self, verbose=False):
+    def reduce(self, verbose=False) -> Self:
         while self.reduce_all_nodes(verbose):
             pass
         if verbose:
             self.draw()
+        return self
 
     def reduce_all_nodes(self, verbose=False) -> bool:
         return any(self.reduce_node(node, verbose) for node in self.nodes)

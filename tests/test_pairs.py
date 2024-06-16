@@ -1,5 +1,5 @@
-from colored_networks.lambda_calc import App
-from colored_networks.lambda_constants import true, false, num, pair, fst, snd, shift
+from colored_networks.lambda_calc import Abs, App, Var
+from colored_networks.lambda_constants import true, false, pair, fst, snd, shift, zero, one
 
 
 def test_fst():
@@ -18,9 +18,17 @@ def test_snd():
     assert net.seems_isomorphic_to(false.to_colored_network())
 
 
+def test_pair():
+    """Test pair true false == pair true false"""
+    pair_tf = pair(zero, zero)
+    net = pair_tf.to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("f", App(App(Var("f"), zero), zero)).to_colored_network())
+
+
 def test_shift():
     """Test shift (pair 0 0) == pair 0 1"""
-    shift_pair = App(shift, pair(num(0), num(0)))
+    shift_pair = App(shift, pair(zero, zero))
     net = shift_pair.to_colored_network()
     net.reduce()
-    assert net.seems_isomorphic_to(pair(num(0), num(1)).to_colored_network())
+    assert net.seems_isomorphic_to(pair(zero, one).to_colored_network().reduce())

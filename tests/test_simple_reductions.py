@@ -33,6 +33,36 @@ def test_reduce_right_child():
     assert net.seems_isomorphic_to(Abs("x", App(Var("x"), Var("x"))).to_colored_network())
 
 
+def test_dup_bound_variable1():
+    """Test (λx. (λy. y y) x) == λx. x x"""
+    net = Abs("x", App(Abs("y", App(Var("y"), Var("y"))), Var("x"))).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("x", App(Var("x"), Var("x"))).to_colored_network())
+
+
+def test_dup_nested_fun():
+    """Test ((λx. x x) (λx y. y)) == λy. y"""
+    net = App(Abs("x", App(Var("x"), Var("x"))), Abs("x", Abs("y", Var("y")))).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("y", Var("y")).to_colored_network())
+
+
+def test_dup_nested_fun2():
+    """Test ((λx. x x) (λx y z. y z z)) == λy z. y z z"""
+    net = App(
+        Abs("x", App(Var("x"), Var("x"))), Abs("x", Abs("y", Abs("z", App(Var("y"), App(Var("z"), Var("z"))))))
+    ).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("y", Abs("z", App(Var("y"), App(Var("z"), Var("z"))))).to_colored_network())
+
+
+def test_dup_duplicating_term():
+    """Test ((λx. x x) (id id)) == id"""
+    net = App(Abs("x", App(Var("x"), Var("x"))), App(id, id)).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(id.to_colored_network())
+
+
 def test_dup_first_in_chain():
     """Test (λx. (λy. y y) x x) == λx. x x x"""
     net = Abs("x", App(App(Abs("y", Var("y")), Var("x")), Var("x"))).to_colored_network()

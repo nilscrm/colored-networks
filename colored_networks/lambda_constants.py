@@ -30,7 +30,7 @@ def num(n: int) -> Abs:
     return Abs("f", Abs("x", inner))
 
 
-_pair = Abs("a", Abs("b", Abs("f", App(App(Var("f"), Var("a")), Var("b")))))
+_pair = Abs("a", Abs("b", Abs("P", App(App(Var("P"), Var("a")), Var("b")))))
 _fst = Abs("p", App(Var("p"), true))
 _snd = Abs("p", App(Var("p"), false))
 
@@ -47,7 +47,7 @@ def snd(p: LambdaTerm) -> App:
     return App(_snd, p)
 
 
-shift = Abs("P", Abs("S", App(App(Var("S"), App(Var("P"), false)), App(_succ, App(Var("P"), true)))))
+shift = Abs("p", Abs("P", App(App(Var("P"), App(Var("p"), false)), succ(App(Var("p"), true)))))
 _dec = Abs("N", App(App(App(Var("N"), shift), pair(zero, zero)), true))
 
 

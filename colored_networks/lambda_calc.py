@@ -7,20 +7,6 @@ from colored_networks.colored_network import ColoredNetwork, Edge, Node
 
 
 class LambdaTerm(ABC):
-    def reduce(self):
-        match self:
-            case App(Abs(var, body), arg):
-                return body.substitute(var, arg).reduce()
-            case App(func, arg):
-                return App(func.reduce(), arg.reduce())
-            case Abs(var, body):
-                return Abs(var, body.reduce())
-            case Var():
-                return self
-
-    @abstractmethod
-    def substitute(self, var, replacement): ...
-
     @abstractmethod
     def to_colored_network_edges(
         self, next_vertex_id, var_dup_nodes: dict[str, Node]
@@ -40,12 +26,6 @@ class Abs(LambdaTerm):
     var: str
     body: LambdaTerm
 
-    def substitute(self, var, replacement):
-        if self.var == var:
-            return self
-        self.body = self.body.substitute(var, replacement)
-        return self
-
     def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         abs_node = Node(next_vertex_id, label=f"λ{self.var}")
         var_dup_nodes[self.var] = abs_node
@@ -61,11 +41,6 @@ class Abs(LambdaTerm):
 class App(LambdaTerm):
     func: LambdaTerm
     arg: LambdaTerm
-
-    def substitute(self, var, replacement):
-        self.func = self.func.substitute(var, replacement)
-        self.arg = self.arg.substitute(var, replacement)
-        return self
 
     def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         func_root, func_edges, next_vertex_id = self.func.to_colored_network_edges(next_vertex_id, var_dup_nodes)
@@ -90,9 +65,6 @@ class App(LambdaTerm):
 @dataclass
 class Var(LambdaTerm):
     name: str
-
-    def substitute(self, var, replacement):
-        return replacement if self.name == var else self
 
     def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         var_node = Node(next_vertex_id, label=self.name)
