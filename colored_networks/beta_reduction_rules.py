@@ -464,52 +464,82 @@ beta_reduction_rules = (
             node1_connection={"yellow": "darkred"},
             node2_connection={"yellow": "darkred"},
         ),
-        SplitRule(
-            name="delete dup node (one neighbor), step 1",
+        DeleteRule(
+            name="delete dup node (one neighbor)",
             input={"darkred": 2, "forestgreen": 1},
-            node1_connection={"forestgreen": "forestgreen", "darkred": "firebrick"},
-            node2_connection={"darkred": "crimson"},
+            rewiring={("forestgreen", "darkred"): "darkred"},
         ),
         DeleteRule(
-            name="delete dup node (one neighbor), step 2",
-            input={"firebrick": 2, "forestgreen": 1},
-            rewiring={("forestgreen", "firebrick"): "firebrick"},
-        ),
-        SplitRule(
-            name="delete dup node (two neighbor), step 1",
+            name="delete dup node (two neighbor)",
             input={"darkred": 2, "forestgreen": 1, "green": 1},
-            node1_connection={"forestgreen": "forestgreen", "green": "green", "darkred": "firebrick"},
-            node2_connection={"darkred": "crimson"},
-        ),
-        DeleteRule(
-            name="delete dup node (two neighbor), step 2",
-            input={"firebrick": 2, "forestgreen": 1, "green": 1},
-            rewiring={("forestgreen", "firebrick"): "firebrick", ("green", "forestgreen"): "green"},
+            rewiring={("forestgreen", "darkred"): "darkred", ("green", "forestgreen"): "lawngreen"},
         ),
         DeleteRule(
             name="delete dup connector node (no neighbor)",
-            input={"firebrick": 2},
+            input={"darkred": 2},
             rewiring={},
         ),
         DeleteRule(
             name="delete dup connector node (one neighbor)",
-            input={"firebrick": 2, "green": 1},
+            input={"darkred": 2, "green": 1},
+            rewiring={},
+        ),
+        DeleteRule(
+            name="delete dup connector node (one neighbor)",
+            input={"darkred": 2, "lawngreen": 1},
             rewiring={},
         ),
         DeleteRule(
             name="delete dup connector node (two neighbors)",
-            input={"firebrick": 2, "green": 2},
-            rewiring={("green", "green"): "green"},
-        ),
-        DeleteRule(
-            name="delete dup node deleter",
-            input={"crimson": 1},
-            rewiring={},
+            input={"darkred": 2, "green": 1, "lawngreen": 1},
+            rewiring={("green", "lawngreen"): "green"},
         ),
         DeleteRule(
             name="Delete singleton node",
             input={},
             rewiring={},
+        ),
+        # The following handle rules for deleting a variable while it is being substituted into.
+        DeleteRule(
+            name="delete dup node (one neighbor while being substituted)",
+            input={"darkred": 2, "forestgreen": 1, "fuchsia": 1, "pink": 1},
+            rewiring={("forestgreen", "darkred"): "darkred", ("pink", "fuchsia"): "maroon"},
+        ),
+        DeleteRule(
+            name="delete dup node (two neighbor, while being substituted)",
+            input={"darkred": 2, "forestgreen": 1, "green": 1},
+            rewiring={
+                ("forestgreen", "darkred"): "darkred",
+                ("green", "forestgreen"): "lawngreen",
+                ("green", "fuchsia"): "fuchsia",
+                ("green", "pink"): "pink",
+            },
+        ),
+        SplitRule(
+            name="delete dup connector node (no neighbor, while being substituted)",
+            input={"darkred": 2, "fuchsia": 1, "pink": 1},
+            node1_connection={"pink": "maroon"},
+            node2_connection={},
+        ),
+        SplitRule(
+            name="delete dup connector node (one neighbor, while being substituted)",
+            input={"darkred": 2, "green": 1, "fuchsia": 1, "pink": 1},
+            node1_connection={"pink": "maroon"},
+            node2_connection={},
+        ),
+        DeleteRule(
+            name="delete dup connector node (one neighbor, while being substituted)",
+            input={"darkred": 2, "lawngreen": 1, "fuchsia": 1, "pink": 1},
+            rewiring={("lawngreen", "fuchsia"): "fuchsia", ("pink", "lawngreen"): "pink"},
+        ),
+        DeleteRule(
+            name="delete dup connector node (two neighbors, while being substituted)",
+            input={"darkred": 2, "green": 1, "lawngreen": 1, "fuchsia": 1, "pink": 1},
+            rewiring={
+                ("green", "lawngreen"): "green",
+                ("pink", "lawngreen"): "pink",
+                ("lawngreen", "fuchsia"): "fuchsia",
+            },
         ),
     ]
 )
