@@ -472,47 +472,5 @@ beta_reduction_rules = (
             input={},
             rewiring={},
         ),
-        # The following handle rules for deleting a variable while it is being substituted into.
-        # DeleteRule(
-        #     name="delete dup node (one neighbor while being substituted)",
-        #     input={"darkred": 2, "forestgreen": 1, "fuchsia": 1, "pink": 1},
-        #     rewiring={("forestgreen", "darkred"): "darkred", ("pink", "fuchsia"): "maroon"},
-        # ),
-        # DeleteRule(
-        #     name="delete dup node (two neighbor, while being substituted)",
-        #     input={"darkred": 2, "forestgreen": 1, "green": 1},
-        #     rewiring={
-        #         ("forestgreen", "darkred"): "darkred",
-        #         ("green", "forestgreen"): "lawngreen",
-        #         ("green", "fuchsia"): "fuchsia",
-        #         ("green", "pink"): "pink",
-        #     },
-        # ),
-        # SplitRule(
-        #     name="delete dup connector node (no neighbor, while being substituted)",
-        #     input={"darkred": 2, "fuchsia": 1, "pink": 1},
-        #     node1_connection={"pink": "maroon"},
-        #     node2_connection={},
-        # ),
-        # SplitRule(
-        #     name="delete dup connector node (one neighbor, while being substituted)",
-        #     input={"darkred": 2, "green": 1, "fuchsia": 1, "pink": 1},
-        #     node1_connection={"pink": "maroon"},
-        #     node2_connection={},
-        # ),
-        # DeleteRule(
-        #     name="delete dup connector node (one neighbor, while being substituted)",
-        #     input={"darkred": 2, "lawngreen": 1, "fuchsia": 1, "pink": 1},
-        #     rewiring={("lawngreen", "fuchsia"): "fuchsia", ("pink", "lawngreen"): "pink"},
-        # ),
-        # DeleteRule(
-        #     name="delete dup connector node (two neighbors, while being substituted)",
-        #     input={"darkred": 2, "green": 1, "lawngreen": 1, "fuchsia": 1, "pink": 1},
-        #     rewiring={
-        #         ("green", "lawngreen"): "green",
-        #         ("pink", "lawngreen"): "pink",
-        #         ("lawngreen", "fuchsia"): "fuchsia",
-        #     },
-        # ),
     ]
 )
