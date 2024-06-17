@@ -8,9 +8,7 @@ from colored_networks.colored_network import ColoredNetwork, Edge, Node
 
 class LambdaTerm(ABC):
     @abstractmethod
-    def to_colored_network_edges(
-        self, next_vertex_id, var_dup_nodes: dict[str, Node]
-    ) -> tuple[Node, list[Edge], int]: ...
+    def to_colored_network_edges(self, next_vertex_id, var_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]: ...
 
     def to_colored_network(self) -> ColoredNetwork:
         edges = self.to_colored_network_edges(0, {})[1]
@@ -26,10 +24,16 @@ class Abs(LambdaTerm):
     var: str
     body: LambdaTerm
 
-    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
+    def to_colored_network_edges(self, next_vertex_id, var_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         abs_node = Node(next_vertex_id, label=f"λ{self.var}")
-        var_dup_nodes[self.var] = abs_node
-        body_node, body_edges, next_vertex_id = self.body.to_colored_network_edges(next_vertex_id + 1, var_dup_nodes)
+        # Update binding but keep the old one to restore the orignal binding after the body is processed
+        already_has_binding = self.var in var_nodes
+        if already_has_binding:
+            old_var_node = var_nodes[self.var]
+        var_nodes[self.var] = abs_node
+        body_node, body_edges, next_vertex_id = self.body.to_colored_network_edges(next_vertex_id + 1, var_nodes)
+        if already_has_binding:
+            var_nodes[self.var] = old_var_node
         edges = [Edge(abs_node, body_node, "black")] + body_edges
         return abs_node, edges, next_vertex_id
 
@@ -42,16 +46,16 @@ class App(LambdaTerm):
     func: LambdaTerm
     arg: LambdaTerm
 
-    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
-        func_root, func_edges, next_vertex_id = self.func.to_colored_network_edges(next_vertex_id, var_dup_nodes)
-        arg_root, arg_edges, next_vertex_id = self.arg.to_colored_network_edges(next_vertex_id, var_dup_nodes)
+    def to_colored_network_edges(self, next_vertex_id, var_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
+        func_root, func_edges, next_vertex_id = self.func.to_colored_network_edges(next_vertex_id, var_nodes)
+        arg_root, arg_edges, next_vertex_id = self.arg.to_colored_network_edges(next_vertex_id, var_nodes)
         app_node = Node(next_vertex_id, label="⋅")
-        connecter_node = Node(next_vertex_id + 1)
+        arg_connecter_node = Node(next_vertex_id + 1)
         edges = (
             [
                 Edge(app_node, func_root, "red"),
-                Edge(app_node, connecter_node, "blue"),
-                Edge(connecter_node, arg_root, "navy"),
+                Edge(app_node, arg_connecter_node, "blue"),
+                Edge(arg_connecter_node, arg_root, "navy"),
             ]
             + func_edges
             + arg_edges
@@ -66,18 +70,16 @@ class App(LambdaTerm):
 class Var(LambdaTerm):
     name: str
 
-    def to_colored_network_edges(self, next_vertex_id, var_dup_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
+    def to_colored_network_edges(self, next_vertex_id, var_nodes: dict[str, Node]) -> tuple[Node, list[Edge], int]:
         var_node = Node(next_vertex_id, label=self.name)
-        parent_dup_node = var_dup_nodes[self.name]
-        dup_connecter_node = Node(next_vertex_id + 1)
-        new_dup_node = Node(next_vertex_id + 2, label="Δ")
+        parent_var_node = var_nodes[self.name]
+        var_connecter_node = Node(next_vertex_id + 1)
         edges = [
-            Edge(parent_dup_node, dup_connecter_node, "green"),
-            Edge(dup_connecter_node, new_dup_node, "forestgreen"),
-            Edge(new_dup_node, var_node, "yellow"),
+            Edge(parent_var_node, var_connecter_node, "green"),
+            Edge(var_connecter_node, var_node, "forestgreen"),
         ]
-        var_dup_nodes[self.name] = new_dup_node
-        return var_node, edges, next_vertex_id + 3
+        var_nodes[self.name] = var_node
+        return var_node, edges, next_vertex_id + 2
 
     def clone(self) -> Self:
         return Var(self.name)

@@ -116,13 +116,13 @@ class ColoredNetwork:
     def seems_isomorphic_to(self, other: Self) -> bool:
         colors1 = sorted(
             [
-                sorted(edge.color for edge in self.edges if edge.v1.id == node or edge.v2.id == node)
+                sorted(edge.color for edge in self.edges if edge.v1.id == node.id or edge.v2.id == node.id)
                 for node in self.nodes
             ]
         )
         colors2 = sorted(
             [
-                sorted(edge.color for edge in other.edges if edge.v1.id == node or edge.v2.id == node)
+                sorted(edge.color for edge in other.edges if edge.v1.id == node.id or edge.v2.id == node.id)
                 for node in other.nodes
             ]
         )
