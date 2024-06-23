@@ -2,3 +2,4 @@
 *.pyc
 __pychache__/
 .pytest_cache/
+latex_build/
