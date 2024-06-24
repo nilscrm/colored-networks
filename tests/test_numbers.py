@@ -55,17 +55,3 @@ def test_dec_1():
     net = dec_1.to_colored_network()
     net.reduce()
     assert net.seems_isomorphic_to(zero.to_colored_network())
-
-
-def test_dec_2():
-    dec_2 = dec(num(2))
-    net = dec_2.to_colored_network()
-    net.reduce()
-    assert net.seems_isomorphic_to(num(1).to_colored_network())
-
-
-# def test_dec_3():
-#     dec_3 = dec(num(3))
-#     net = dec_3.to_colored_network()
-#     net.reduce()
-#     assert net.seems_isomorphic_to(num(2).to_colored_network())

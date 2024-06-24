@@ -1,0 +1,83 @@
+\section{Notes on the reduction to Lambda Calculus}
+
+My initial plan was actually to reduce Lambda expressions to Colored Graphs.
+I made great progress towards that and am able to simulate boolean values, church numerals, addition, multiplication and even pairs.
+However, I did not quite finish the reduction as there was always some problem.
+I still wanted to make this small section with some notes on my attempt (not only since I spent way too many hours with this but also) because I think there are some interesting insights that are worth sharing.
+
+\begin{center}
+    \begin{tikzpicture}
+        \begin{scope}[xshift=-3cm]
+            \node[circle,draw] (lf1) at (0,0) {$\lambda f$};
+            \node[circle,draw] (lx1) at (0,-1.3) {$\lambda x$};
+            \node[circle,draw] (a1) at (0,-2.6) {$\cdot$};
+            \node[circle,draw] (f1) at (-0.7,-3.9) {$f$};
+            \node[circle,draw] (a2) at (0.7,-3.9) {$\cdot$};
+            \node[circle,draw] (f2) at (0,-5.2) {$f$};
+            \node[circle,draw] (x1) at (1.4,-5.2) {$x$};
+
+            \draw[thick] (lf1) -- (lx1);
+            \draw[thick] (lx1) -- (a1);
+            \draw[thick] (a1) -- (f1);
+            \draw[thick] (a1) -- (a2);
+            \draw[thick] (a2) -- (f2);
+            \draw[thick] (a2) -- (x1);
+        \end{scope}
+
+        \begin{scope}[xshift=+3cm]
+            \node[circle,draw] (lf1) at (0,0) {};
+            \node[circle,draw] (lx1) at (0,-1.3) {};
+            \node[circle,draw] (a1) at (0,-2.6) {};
+            \node[circle,draw] (f1) at (-0.7,-3.9) {};
+            \node[circle,draw] (arg_connector1) at (0.35,-3.25) {};
+            \node[circle,draw] (a2) at (0.7,-3.9) {};
+            \node[circle,draw] (f2) at (0,-5.2) {};
+            \node[circle,draw] (arg_connector2) at (1.05,-4.55) {};
+            \node[circle,draw] (x1) at (1.4,-5.2) {};
+
+            \node[circle,draw] (d1) at (-1.2,-1.95) {};
+            \node[circle,draw] (d2) at (-0.65,-4.75) {};
+            \node[circle,draw] (d3) at (1.2,-2.6) {};
+
+            \draw[thick,black] (lf1) -- (lx1);
+            \draw[thick,black] (lx1) -- (a1);
+            \draw[thick,red] (a1) -- (f1);
+            \draw[thick,blue] (a1) -- (arg_connector1);
+            \draw[thick,navyblue] (arg_connector1) -- (a2);
+            \draw[thick,red] (a2) -- (f2);
+            \draw[thick,blue] (a2) -- (arg_connector2);
+            \draw[thick,navyblue] (arg_connector2) -- (x1);
+
+            \draw[thick,green] (lf1) -- (d1);
+            \draw[thick,forestgreen] (d1) -- (f1);
+            \draw[thick,green] (f1) -- (d2);
+            \draw[thick,forestgreen] (d2) -- (f2);
+            \draw[thick,green] (lx1) -- (d3);
+            \draw[thick,forestgreen] (d3) -- (x1);
+        \end{scope}
+    \end{tikzpicture}
+\end{center}
+
+Here's an exmaple of how a lambda expression can be represented as a Colored Graph.
+I won't go into any detail on how this encoding is done or the rules to implement a simple version of beta reduction.
+
+Here, I want to focus on interesting insights about my new model, the implementation of lambda calculus and how they relate to other research.
+First, an interesting technique that I used for binding variables to the lambda abstraction is to connected with with in a chain instead of all variables to their binding lambda.
+This is because a lambda can bind arbitrarily many variables and thus the degree could grow indefinetly.
+This is a problem for Colored Graph rules as they only apply to nodes with a fixed degree.
+Then, I implemented beta reduction by passing the argument to a function to this chain of variables.
+Each of them would clone the argument node for node, subtitute the term for itself and pass the clone to the next variable to be replaced.
+This worked great for simple cases but there was one major issue that I didn't resolve.
+Namely, if a variable gets cloned there are two different scenarios.
+If the binding lambda gets cloned the entire chain of variable gets cloned as well, but if the binding lambda didn't get cloned, we are only supposed to create a new node in this chain of variables.
+This lead me to two great insights I want to share.
+First, the definition of beta reduction hides a lot of the complexity of synchronization that is needed for an actual implementation.
+That is either "global synchronization" is needed to implement a fixed reduction strategy like leftmost outermost reduction.
+And secondly, if parallel reduction of beta redexes is desired, some bookkeeping is required to handle the issue I just described.
+After some research I found that others have already looked into this.
+In particular, basically all algorithms~\cite{lamping, asperti1998optimal, van2004lambdascope} that implement optimal beta reduction~\cite{levy1978reductions}, use some sort of bookkeeping nodes for this exact problem.
+
+It might seem that my model suffers from the same problem as rules are applied one after the other.
+However, the main difference is that rules act more local than beta reduction.
+While a lambda abstraction can bind variables anywhere inside its body, rules in my model only look at the neighboring nodes.
+Thus only synchronization with them is needed to implement fully parallel reduction for my model.

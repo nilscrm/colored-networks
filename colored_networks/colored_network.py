@@ -95,8 +95,9 @@ class ColoredNetwork:
                                     # This if is to prevent two edges appearning for rules that connect the same colors
                                     if color1 == color2 and n1.id < n2.id:
                                         continue
+                                    # Delete old edge
+                                    self.edges = [edge for edge in self.edges if (edge.v1.id, edge.v2.id) != (n1.id, n2.id) and (edge.v1.id, edge.v2.id) != (n2.id, n1.id)]
                                     self.edges.append(Edge(n1, n2, rule.rewiring[(color1, color2)]))
-
                 return True
         return False
 

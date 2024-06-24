@@ -2,6 +2,13 @@ from colored_networks.lambda_calc import Abs, App, Var
 from colored_networks.lambda_constants import id
 
 
+def test_dup_var():
+    """Test (λy. (λx. x x) y) == (λy. y y)"""
+    net = Abs("y", App(Abs("x", App(Var("x"), Var("x"))), Var("y"))).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("y", App(Var("y"), Var("y"))).to_colored_network())
+
+
 def test_id_dup():
     """Test (λx. x x) (λx. x) == λx. x"""
     id_dup = App(Abs("x", App(Var("x"), Var("x"))), id)
@@ -145,3 +152,10 @@ def test_dup_bound_variable4():
             ),
         ).to_colored_network()
     )
+
+
+def test_dup_while_substituting():
+    """ Test (λy (λx. (λz. z z) x) y) = λy. y y"""
+    net = Abs("y", App(Abs("x", App(Abs("z", App(Var("z"), Var("z"))), Var("x"))), Var("y"))).to_colored_network()
+    net.reduce()
+    assert net.seems_isomorphic_to(Abs("y", App(Var("y"), Var("y"))).to_colored_network())
