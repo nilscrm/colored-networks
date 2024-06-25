@@ -17,6 +17,9 @@ dependencies = [
     "pytest",
 ]
 
+[tool.setuptools]
+packages = ["colored_networks"]
+
 [tool.black]
 line-length = 120
 target-version = ['py312']
